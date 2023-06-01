@@ -28,14 +28,12 @@ import linc.com.library.callback.OnFileComplete;
 import linc.com.library.types.Echo;
 
 public class MainActivity extends AppCompatActivity {
-    private static final int REQUEST_CODE = 1;
-    private Button saveOutPut,playFile;
 
+    private MediaPlayer mediaPlayer;
     //-------------------------- Audio Speed
     private SeekBar audioSpeedSeekBar;
     private TextView audioSpeedText;
     private float audioSpeedValue;
-
 
     //---------------------- AUDIO BASS
     private SeekBar bassSeekBar,widthSeekBar,frequencySeekBar;
@@ -49,21 +47,22 @@ public class MainActivity extends AppCompatActivity {
     private int transitionTime;
     private float shifterWidthValue;
 
-
-    ///-------------------------- Spinner
-    private Spinner spinner;
     private Echo echoValue;
-    private Echo[] echos = new Echo[]{
+    private final Echo[] echos = new Echo[]{
             Echo.ECHO_FEW_MOUNTAINS,Echo.ECHO_METALLIC,Echo.ECHO_OPEN_AIR,Echo.ECHO_TWICE_INSTRUMENTS
     };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // TODO : Generate random id for the saved and modified audio file
         String id = String.valueOf(System.currentTimeMillis());
-        saveOutPut = findViewById(R.id.saveOutPut);
-        playFile = findViewById(R.id.playTrack);
+
+        // TODO : Reference all views needed
+        Button saveOutPut = findViewById(R.id.saveOutPut);
+        Button playFile = findViewById(R.id.playTrack);
         audioSpeedSeekBar = findViewById(R.id.audioSpeedSeekBar);
         bassSeekBar = findViewById(R.id.bassSeekBar);
         widthSeekBar = findViewById(R.id.bassWidthSeekBar);
@@ -76,7 +75,8 @@ public class MainActivity extends AppCompatActivity {
         audioSpeedText = findViewById(R.id.audioSpeedText);
         shiftTimeText = findViewById(R.id.shifterTimeText);
         shiftWidthText = findViewById(R.id.shifterWidthText);
-        spinner = findViewById(R.id.spinner);
+        ///-------------------------- Spinner
+        Spinner spinner = findViewById(R.id.spinner);
 
         // TODO : Audio Speed SeeKBar
         audioSpeedSeekBar.setProgress(100);
@@ -265,12 +265,13 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
+        // TODO : Preview and playing the modified audio file
         playFile.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                MediaPlayer mediaPlayer = new MediaPlayer();
+                mediaPlayer = new MediaPlayer();
                 try {
-                    mediaPlayer.setDataSource(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getPath() + (id + ".wav"));
+                    mediaPlayer.setDataSource(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + "File" +  id + ".wav");
                     mediaPlayer.prepare();
                     mediaPlayer.start();
                 } catch (Exception e) {
@@ -305,5 +306,14 @@ public class MainActivity extends AppCompatActivity {
             p = storage_permissions;
         }
         return p;
+    }
+
+    @Override
+    protected void onDestroy() {
+        if(mediaPlayer != null){
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
+        super.onDestroy();
     }
 }
