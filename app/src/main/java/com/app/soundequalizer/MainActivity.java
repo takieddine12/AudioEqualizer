@@ -285,13 +285,13 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public static String[] storge_permissions = {
+    public static String[] storage_permissions = {
             android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
             android.Manifest.permission.READ_EXTERNAL_STORAGE
     };
 
     @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
-    public static String[] storge_permissions_33 = {
+    public static String[] storage_permissions_33 = {
             android.Manifest.permission.READ_MEDIA_IMAGES,
             android.Manifest.permission.READ_MEDIA_AUDIO,
             android.Manifest.permission.READ_MEDIA_VIDEO
@@ -300,9 +300,9 @@ public class MainActivity extends AppCompatActivity {
     public static String[] permissions() {
         String[] p;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            p = storge_permissions_33;
+            p = storage_permissions_33;
         } else {
-            p = storge_permissions;
+            p = storage_permissions;
         }
         return p;
     }
