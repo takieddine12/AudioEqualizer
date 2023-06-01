@@ -1,6 +1,7 @@
 package com.app.soundequalizer;
 
 import android.annotation.SuppressLint;
+import android.content.pm.PackageManager;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Environment;
@@ -15,6 +16,8 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import java.io.File;
 
@@ -23,7 +26,8 @@ import linc.com.library.callback.OnFileComplete;
 import linc.com.library.types.Echo;
 
 public class MainActivity extends AppCompatActivity {
-    private Button saveOutPut;
+    private static final int REQUEST_CODE = 1;
+    private Button saveOutPut,playFile;
 
     //-------------------------- Audio Speed
     private SeekBar audioSpeedSeekBar;
@@ -57,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
 
         String id = String.valueOf(System.currentTimeMillis());
         saveOutPut = findViewById(R.id.saveOutPut);
+        playFile = findViewById(R.id.playTrack);
         audioSpeedSeekBar = findViewById(R.id.audioSpeedSeekBar);
         bassSeekBar = findViewById(R.id.bassSeekBar);
         widthSeekBar = findViewById(R.id.bassWidthSeekBar);
@@ -213,8 +218,6 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-
-
         saveOutPut.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -260,6 +263,32 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
+        playFile.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                MediaPlayer mediaPlayer = new MediaPlayer();
+                try {
+                    mediaPlayer.setDataSource(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getPath() + (id + ".wav"));
+                    mediaPlayer.prepare();
+                    mediaPlayer.start();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        // TODO : REQUEST PERMISSIONS
+        // Check if the permission is granted
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+            // Permission is not granted, request it
+            ActivityCompat.requestPermissions(this,
+                    new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                    REQUEST_CODE);
+        } else {
+            // Permission already granted, proceed with the operation
+            // ...
+        }
 
 
     }

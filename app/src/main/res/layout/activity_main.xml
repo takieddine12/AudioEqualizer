@@ -355,5 +355,12 @@
         android:layout_marginTop="50dp"
         android:text="Save Output"/>
 
+    <Button
+        android:id="@+id/playTrack"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="Play File"/>
+
 
 </LinearLayout>
