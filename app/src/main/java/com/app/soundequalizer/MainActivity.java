@@ -47,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
     private int transitionTime;
     private float shifterWidthValue;
 
+    //----------------------- Echo
     private Echo echoValue;
     private final Echo[] echos = new Echo[]{
             Echo.ECHO_FEW_MOUNTAINS,Echo.ECHO_METALLIC,Echo.ECHO_OPEN_AIR,Echo.ECHO_TWICE_INSTRUMENTS
