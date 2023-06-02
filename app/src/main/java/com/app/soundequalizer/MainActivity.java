@@ -1,7 +1,6 @@
 package com.app.soundequalizer;
 
 import android.annotation.SuppressLint;
-import android.content.pm.PackageManager;
 import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Bundle;
@@ -11,7 +10,6 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.FrameLayout;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -19,12 +17,8 @@ import android.widget.TextView;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-
 import java.io.File;
-
 import linc.com.library.AudioTool;
-import linc.com.library.callback.OnFileComplete;
 import linc.com.library.types.Echo;
 
 public class MainActivity extends AppCompatActivity {
@@ -53,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
             Echo.ECHO_FEW_MOUNTAINS,Echo.ECHO_METALLIC,Echo.ECHO_OPEN_AIR,Echo.ECHO_TWICE_INSTRUMENTS
     };
 
+    @SuppressLint("SetTextI18n")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -105,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
 
 
         // TODO : Apply Echo Effect
-        ArrayAdapter<Echo>  arrayAdapter = new ArrayAdapter<Echo>(this, android.R.layout.simple_spinner_item,echos);
+        ArrayAdapter<Echo>  arrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, echos);
         spinner.setAdapter(arrayAdapter);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -126,6 +121,7 @@ public class MainActivity extends AppCompatActivity {
         widthSeekBar.setProgress(100);
         frequencySeekBar.setProgress(100);
         bassSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 bassSeekBar.setProgress(progress);
@@ -221,63 +217,42 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-        saveOutPut.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                  AudioTool.getInstance(MainActivity.this)
-                            .withAudio(new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), "file.wav"))
-                            .removeAudioNoise(new OnFileComplete() {
-                              @Override
-                              public void onComplete(File output) {
+        saveOutPut.setOnClickListener(v -> {
+            try {
+              AudioTool.getInstance(MainActivity.this)
+                        .withAudio(new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), "file.wav"))
+                        .removeAudioNoise(output -> {
 
-                              }
-                          })
-                            .changeAudioBass(bassValue, widthValue, frequencyValue, new OnFileComplete() {
-                              @Override
-                              public void onComplete(File output) {
+                        })
+                        .changeAudioBass(bassValue, widthValue, frequencyValue, output -> {
 
-                              }
-                          })
-                            .changeAudioSpeed(audioSpeedValue, new OnFileComplete() {
-                              @Override
-                              public void onComplete(File output) {
+                        })
+                        .changeAudioSpeed(audioSpeedValue, output -> {
 
-                              }
-                          })
-                            .applyShifterEffect(transitionTime, shifterWidthValue, new OnFileComplete() {
-                              @Override
-                              public void onComplete(File output) {
+                        })
+                        .applyShifterEffect(transitionTime, shifterWidthValue, output -> {
 
-                              }
-                          })
-                            .applyEchoEffect(echoValue, new OnFileComplete() {
-                              @Override
-                              public void onComplete(File output) {
+                        })
+                        .applyEchoEffect(echoValue, output -> {
 
-                              }
-                          })
-                            .saveCurrentTo(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getPath() + (id + ".wav")) // Audio file with echo and without vocal
-                            .release();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                        })
+                        .saveCurrentTo(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getPath() + (id + ".wav")) // Audio file with echo and without vocal
+                        .release();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         });
 
 
         // TODO : Preview and playing the modified audio file
-        playFile.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mediaPlayer = new MediaPlayer();
-                try {
-                    mediaPlayer.setDataSource(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + "File" +  id + ".wav");
-                    mediaPlayer.prepare();
-                    mediaPlayer.start();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+        playFile.setOnClickListener(v -> {
+            mediaPlayer = new MediaPlayer();
+            try {
+                mediaPlayer.setDataSource(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + "File" +  id + ".wav");
+                mediaPlayer.prepare();
+                mediaPlayer.start();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         });
 
