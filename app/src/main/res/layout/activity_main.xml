@@ -353,7 +353,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="50dp"
-        android:text="Save Output"/>
+        android:text="Pick File"/>
 
     <Button
         android:id="@+id/playTrack"

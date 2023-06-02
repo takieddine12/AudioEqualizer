@@ -1,10 +1,14 @@
 package com.app.soundequalizer;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
+import android.database.Cursor;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -13,16 +17,21 @@ import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-import java.io.File;
+import androidx.loader.content.CursorLoader;
+
 import linc.com.library.AudioTool;
 import linc.com.library.types.Echo;
 
 public class MainActivity extends AppCompatActivity {
 
+    private Button saveOutPut;
+    private String uri;
     private MediaPlayer mediaPlayer;
     //-------------------------- Audio Speed
     private SeekBar audioSpeedSeekBar;
@@ -47,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
             Echo.ECHO_FEW_MOUNTAINS,Echo.ECHO_METALLIC,Echo.ECHO_OPEN_AIR,Echo.ECHO_TWICE_INSTRUMENTS
     };
 
-    @SuppressLint("SetTextI18n")
+    @SuppressLint({"SetTextI18n", "IntentReset"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -57,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
         String id = String.valueOf(System.currentTimeMillis());
 
         // TODO : Reference all views needed
-        Button saveOutPut = findViewById(R.id.saveOutPut);
+        saveOutPut = findViewById(R.id.saveOutPut);
         Button playFile = findViewById(R.id.playTrack);
         audioSpeedSeekBar = findViewById(R.id.audioSpeedSeekBar);
         bassSeekBar = findViewById(R.id.bassSeekBar);
@@ -218,29 +227,40 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         saveOutPut.setOnClickListener(v -> {
-            try {
-              AudioTool.getInstance(MainActivity.this)
-                        .withAudio(new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), "file.wav"))
-                        .removeAudioNoise(output -> {
+             Log.d("TAG","Button Name "  + saveOutPut.getText().toString());
+             if(saveOutPut.getText().toString().equals("Pick File")){
+                 Intent intent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI);
+                 startActivityForResult(intent,1);
+             } else if(saveOutPut.getText() == "Save File"){
+                if(uri != null){
+                    try {
 
-                        })
-                        .changeAudioBass(bassValue, widthValue, frequencyValue, output -> {
+                        AudioTool.getInstance(MainActivity.this)
+                                .withAudio(uri)
+                                .removeAudioNoise(output -> {
 
-                        })
-                        .changeAudioSpeed(audioSpeedValue, output -> {
+                                })
+                                .changeAudioBass(bassValue, widthValue, frequencyValue, output -> {
 
-                        })
-                        .applyShifterEffect(transitionTime, shifterWidthValue, output -> {
+                                })
+                                .changeAudioSpeed(audioSpeedValue, output -> {
 
-                        })
-                        .applyEchoEffect(echoValue, output -> {
+                                })
+                                .applyShifterEffect(transitionTime, shifterWidthValue, output -> {
 
-                        })
-                        .saveCurrentTo(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getPath() + (id + ".wav")) // Audio file with echo and without vocal
-                        .release();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+                                })
+                                .applyEchoEffect(echoValue, output -> {
+
+                                })
+                                .saveCurrentTo(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC) + "/new-"  + id + getAudioExtension(uri)) // Audio file with echo and without vocal
+                                .release();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    Toast.makeText(MainActivity.this, "Please pick file from your device", Toast.LENGTH_SHORT).show();
+                }
+             }
         });
 
 
@@ -248,7 +268,7 @@ public class MainActivity extends AppCompatActivity {
         playFile.setOnClickListener(v -> {
             mediaPlayer = new MediaPlayer();
             try {
-                mediaPlayer.setDataSource(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + "File" +  id + ".wav");
+                mediaPlayer.setDataSource(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC) + "/new-"  + id + getAudioExtension(uri));
                 mediaPlayer.prepare();
                 mediaPlayer.start();
             } catch (Exception e) {
@@ -284,6 +304,21 @@ public class MainActivity extends AppCompatActivity {
         return p;
     }
 
+    private String getAudioExtension(String filePath){
+        return filePath.substring(filePath.lastIndexOf("."));
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode == 1 && resultCode == RESULT_OK){
+            assert data != null;
+            uri = _getRealPathFromURI(data.getData());
+            saveOutPut.setText("Save File");
+            Log.d("TAG","Audio Path " + _getRealPathFromURI(data.getData()));
+        }
+    }
+
     @Override
     protected void onDestroy() {
         if(mediaPlayer != null){
@@ -291,5 +326,15 @@ public class MainActivity extends AppCompatActivity {
             mediaPlayer = null;
         }
         super.onDestroy();
+    }
+
+    private String _getRealPathFromURI(Uri contentUri) {
+        String[] proj = { MediaStore.Audio.Media.DATA };
+        CursorLoader loader = new CursorLoader(this, contentUri, proj, null, null, null);
+        Cursor cursor = loader.loadInBackground();
+        assert cursor != null;
+        int column_index = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA);
+        cursor.moveToFirst();
+        return cursor.getString(column_index);
     }
 }
