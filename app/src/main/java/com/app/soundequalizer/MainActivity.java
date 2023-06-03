@@ -8,17 +8,21 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
@@ -56,18 +60,19 @@ public class MainActivity extends AppCompatActivity {
             Echo.ECHO_FEW_MOUNTAINS,Echo.ECHO_METALLIC,Echo.ECHO_OPEN_AIR,Echo.ECHO_TWICE_INSTRUMENTS
     };
 
+    private ProgressBar progressBar;
+
     @SuppressLint({"SetTextI18n", "IntentReset"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // TODO : Generate random id for the saved and modified audio file
-        String id = String.valueOf(System.currentTimeMillis());
+
 
         // TODO : Reference all views needed
         saveOutPut = findViewById(R.id.saveOutPut);
-        Button playFile = findViewById(R.id.playTrack);
+        progressBar = findViewById(R.id.progressBar);
         audioSpeedSeekBar = findViewById(R.id.audioSpeedSeekBar);
         bassSeekBar = findViewById(R.id.bassSeekBar);
         widthSeekBar = findViewById(R.id.bassWidthSeekBar);
@@ -227,54 +232,11 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         saveOutPut.setOnClickListener(v -> {
-             Log.d("TAG","Button Name "  + saveOutPut.getText().toString());
-             if(saveOutPut.getText().toString().equals("Pick File")){
-                 Intent intent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI);
-                 startActivityForResult(intent,1);
-             } else if(saveOutPut.getText() == "Save File"){
-                if(uri != null){
-                    try {
-
-                        AudioTool.getInstance(MainActivity.this)
-                                .withAudio(uri)
-                                .removeAudioNoise(output -> {
-
-                                })
-                                .changeAudioBass(bassValue, widthValue, frequencyValue, output -> {
-
-                                })
-                                .changeAudioSpeed(audioSpeedValue, output -> {
-
-                                })
-                                .applyShifterEffect(transitionTime, shifterWidthValue, output -> {
-
-                                })
-                                .applyEchoEffect(echoValue, output -> {
-
-                                })
-                                .saveCurrentTo(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC) + "/new-"  + id + getAudioExtension(uri)) // Audio file with echo and without vocal
-                                .release();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                } else {
-                    Toast.makeText(MainActivity.this, "Please pick file from your device", Toast.LENGTH_SHORT).show();
-                }
-             }
+             Intent intent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI);
+             startActivityForResult(intent,1);
         });
 
 
-        // TODO : Preview and playing the modified audio file
-        playFile.setOnClickListener(v -> {
-            mediaPlayer = new MediaPlayer();
-            try {
-                mediaPlayer.setDataSource(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC) + "/new-"  + id + getAudioExtension(uri));
-                mediaPlayer.prepare();
-                mediaPlayer.start();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
 
         // TODO : REQUEST PERMISSIONS
         ActivityCompat.requestPermissions(MainActivity.this, permissions(), 1);
@@ -311,11 +273,59 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if(requestCode == 1 && resultCode == RESULT_OK){
+        if(requestCode == 1 && resultCode == RESULT_OK) {
+            // TODO : Generate random id for the saved and modified audio file
+            String id = String.valueOf(System.currentTimeMillis());
             assert data != null;
             uri = _getRealPathFromURI(data.getData());
-            saveOutPut.setText("Save File");
-            Log.d("TAG","Audio Path " + _getRealPathFromURI(data.getData()));
+            Log.d("TAG", "Audio Path " + _getRealPathFromURI(data.getData()));
+            if(uri != null){
+                progressBar.setVisibility(View.VISIBLE);
+
+                try {
+                    AudioTool.getInstance(MainActivity.this)
+                            .withAudio(uri)
+                            .removeAudioNoise(output -> {
+
+                            })
+                            .changeAudioBass(bassValue, widthValue, frequencyValue, output -> {
+
+                            })
+                            .changeAudioSpeed(audioSpeedValue, output -> {
+
+                            })
+                            .applyShifterEffect(transitionTime, shifterWidthValue, output -> {
+
+                            })
+                            .applyEchoEffect(echoValue, output -> {
+
+                            })
+                            .saveCurrentTo(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC) + "/new-"  + id + getAudioExtension(uri)) // Audio file with echo and without vocal
+                            .release();
+
+                    new Handler().postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            progressBar.setVisibility(View.GONE);
+                            Toast.makeText(MainActivity.this, "Playing File", Toast.LENGTH_SHORT).show();
+                            mediaPlayer = new MediaPlayer();
+                            try {
+                                mediaPlayer.setDataSource(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC) + "/new-"  + id + getAudioExtension(uri));
+                                mediaPlayer.prepare();
+                                mediaPlayer.start();
+
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    },2000);
+
+                }catch (Exception e){
+                    progressBar.setVisibility(View.GONE);
+                }
+
+
+            }
         }
     }
 
