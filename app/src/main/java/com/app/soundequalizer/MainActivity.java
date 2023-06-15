@@ -9,7 +9,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
-import android.os.Message;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
@@ -22,8 +21,10 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -34,8 +35,8 @@ import linc.com.library.types.Echo;
 
 public class MainActivity extends AppCompatActivity {
 
-    private Button saveOutPut;
-    private String uri;
+    private String fileUri;
+    private Button saveOutPut,playButton;
     private MediaPlayer mediaPlayer;
     //-------------------------- Audio Speed
     private SeekBar audioSpeedSeekBar;
@@ -61,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
     };
 
     private ProgressBar progressBar;
-
+    String id = String.valueOf(System.currentTimeMillis());
     @SuppressLint({"SetTextI18n", "IntentReset"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,6 +86,7 @@ public class MainActivity extends AppCompatActivity {
         audioSpeedText = findViewById(R.id.audioSpeedText);
         shiftTimeText = findViewById(R.id.shifterTimeText);
         shiftWidthText = findViewById(R.id.shifterWidthText);
+        playButton = findViewById(R.id.play);
         ///-------------------------- Spinner
         Spinner spinner = findViewById(R.id.spinner);
 
@@ -99,6 +101,7 @@ public class MainActivity extends AppCompatActivity {
                audioSpeedValue = 100f;
 
                 Log.d("TAG","Audio Speed Progress " + progress);
+                createTrack();
             }
 
             @Override
@@ -121,6 +124,7 @@ public class MainActivity extends AppCompatActivity {
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 echoValue = echos[position];
                 Log.d("TAG","Selected Echo "  + echoValue);
+                createTrack();
             }
 
             @Override
@@ -141,6 +145,7 @@ public class MainActivity extends AppCompatActivity {
                 bassSeekBar.setProgress(progress);
                 bassValue = progress;
                 bassText.setText("" + progress + "%");
+                createTrack();
             }
 
             @Override
@@ -159,6 +164,7 @@ public class MainActivity extends AppCompatActivity {
                 widthSeekBar.setProgress(progress);
                 widthValue = progress;
                 widthText.setText("" + progress + "%");
+                createTrack();
             }
 
             @Override
@@ -177,6 +183,7 @@ public class MainActivity extends AppCompatActivity {
                 frequencySeekBar.setProgress(progress);
                 frequencyValue = progress;
                 frequencyText.setText("" + progress + "%");
+                createTrack();
             }
 
             @Override
@@ -200,6 +207,7 @@ public class MainActivity extends AppCompatActivity {
                 shifterTimeSeekBar.setProgress(progress);
                 transitionTime = progress;
                 shiftTimeText.setText("" + progress + "%");
+                createTrack();
 
             }
 
@@ -219,6 +227,7 @@ public class MainActivity extends AppCompatActivity {
                 shifterWidthSeekBar.setProgress(progress);
                 shifterWidthValue = progress;
                 shiftWidthText.setText("" + progress + "%");
+                createTrack();
             }
 
             @Override
@@ -233,16 +242,55 @@ public class MainActivity extends AppCompatActivity {
         });
         saveOutPut.setOnClickListener(v -> {
              Intent intent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Audio.Media.EXTERNAL_CONTENT_URI);
-             startActivityForResult(intent,1);
+             activityResultLauncher.launch(intent);
         });
-
-
 
         // TODO : REQUEST PERMISSIONS
         ActivityCompat.requestPermissions(MainActivity.this, permissions(), 1);
 
+        playButton.setOnClickListener(v -> {
+            progressBar.setVisibility(View.VISIBLE);
+
+            if(mediaPlayer != null){
+                mediaPlayer.release();
+                mediaPlayer = null;
+            }
+
+            // TODO : Play Audi After 2 seconds
+            mediaPlayer = new MediaPlayer();
+            new Handler().postDelayed(() -> {
+                try {
+                    mediaPlayer.setDataSource(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC) + "/new-"  + id + getAudioExtension(fileUri));
+                    mediaPlayer.setLooping(true);
+                    mediaPlayer.prepare();
+                    mediaPlayer.start();
+                    progressBar.setVisibility(View.GONE);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    Log.d("TAG","Media Player Exception " + e.getMessage());
+                }
+            },5000);
+        });
 
     }
+
+    ActivityResultLauncher<Intent> activityResultLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
+            new ActivityResultCallback<ActivityResult>() {
+                @Override
+                public void onActivityResult(ActivityResult result) {
+                    if(result.getResultCode() == RESULT_OK) {
+                        // TODO : Generate random id for the saved and modified audio file
+                        assert result.getData() != null;
+                        fileUri = _getRealPathFromURI(result.getData().getData());
+                        if(fileUri != null){
+                            saveOutPut.setVisibility(View.GONE);
+                            playButton.setVisibility(View.VISIBLE);
+                        } else {
+                            Log.d("TAG","File Uri is null");
+                        }
+                    }
+                }
+            });
 
     public static String[] storage_permissions = {
             android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
@@ -267,66 +315,41 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private String getAudioExtension(String filePath){
+        Log.d("TAG","FILE " + filePath);
+        Log.d("TAG","FILE CROPPED" + filePath.substring(filePath.lastIndexOf(".")));
         return filePath.substring(filePath.lastIndexOf("."));
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if(requestCode == 1 && resultCode == RESULT_OK) {
-            // TODO : Generate random id for the saved and modified audio file
-            String id = String.valueOf(System.currentTimeMillis());
-            assert data != null;
-            uri = _getRealPathFromURI(data.getData());
-            Log.d("TAG", "Audio Path " + _getRealPathFromURI(data.getData()));
-            if(uri != null){
-                progressBar.setVisibility(View.VISIBLE);
 
-                try {
-                    AudioTool.getInstance(MainActivity.this)
-                            .withAudio(uri)
-                            .removeAudioNoise(output -> {
+    private void createTrack(){
+         if(fileUri != null){
+             Toast.makeText(MainActivity.this, "File is not null", Toast.LENGTH_SHORT).show();
+             try {
+                 AudioTool.getInstance(MainActivity.this)
+                         .withAudio(fileUri)
+                         .removeAudioNoise(output -> {
 
-                            })
-                            .changeAudioBass(bassValue, widthValue, frequencyValue, output -> {
+                         })
+                         .changeAudioBass(bassValue, widthValue, frequencyValue, output -> {
 
-                            })
-                            .changeAudioSpeed(audioSpeedValue, output -> {
+                         })
+                         .changeAudioSpeed(audioSpeedValue, output -> {
 
-                            })
-                            .applyShifterEffect(transitionTime, shifterWidthValue, output -> {
+                         })
+                         .applyShifterEffect(transitionTime, shifterWidthValue, output -> {
 
-                            })
-                            .applyEchoEffect(echoValue, output -> {
+                         })
+                         .applyEchoEffect(echoValue, output -> {
 
-                            })
-                            .saveCurrentTo(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC) + "/new-"  + id + getAudioExtension(uri)) // Audio file with echo and without vocal
-                            .release();
-
-                    new Handler().postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            progressBar.setVisibility(View.GONE);
-                            Toast.makeText(MainActivity.this, "Playing File", Toast.LENGTH_SHORT).show();
-                            mediaPlayer = new MediaPlayer();
-                            try {
-                                mediaPlayer.setDataSource(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC) + "/new-"  + id + getAudioExtension(uri));
-                                mediaPlayer.prepare();
-                                mediaPlayer.start();
-
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    },2000);
-
-                }catch (Exception e){
-                    progressBar.setVisibility(View.GONE);
-                }
-
-
-            }
-        }
+                         })
+                         .saveCurrentTo(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC) + "/new-"  + id + getAudioExtension(fileUri)) // Audio file with echo and without vocal
+                         .release();
+             } catch (Exception e){
+                 Log.d("TAG","Audio Tool Exception " + e.getMessage());
+             }
+         } else {
+             Toast.makeText(this, "Please pick a file.. ", Toast.LENGTH_SHORT).show();
+         }
     }
 
     @Override
